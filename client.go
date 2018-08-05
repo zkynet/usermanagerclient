@@ -39,7 +39,8 @@ func (c *Client) FacebookLogin(email string, name string, facebookID string) err
 	if err != nil {
 		return err
 	}
-
+	fmt.Println(resp.Status)
+	fmt.Println(resp.StatusCode)
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	bodyString := string(bodyBytes)
 	fmt.Println(bodyString)
