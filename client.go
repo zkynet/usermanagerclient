@@ -3,6 +3,7 @@ package usermanagerclient
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -39,7 +40,9 @@ func (c *Client) FacebookLogin(email string, name string, facebookID string) err
 		return err
 	}
 
-	fmt.Println(resp)
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyString := string(bodyBytes)
+	fmt.Println(bodyString)
 
 	return err
 }
