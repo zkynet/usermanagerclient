@@ -17,6 +17,7 @@ type Client struct {
 func NewClient() *Client {
 	return &Client{
 		Headers: make(map[string]string),
+		Cookies: make(map[string]*http.Cookie),
 	}
 }
 
