@@ -22,6 +22,30 @@ func NewClient() *Client {
 	}
 }
 
+func (c *Client) Login(email string, password string) error {
+	message := map[string]interface{}{
+		"email":    email,
+		"password": password,
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	url := c.URL + ":" + c.Port + "/login"
+	err, resp := c.sendRequest(c.Headers, "POST", bytesRepresentation, url)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(resp.StatusCode)
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyString := string(bodyBytes)
+	fmt.Println(bodyString)
+	return err
+}
+
 func (c *Client) FacebookLogin(email string, name string, facebookID string) error {
 	message := map[string]interface{}{
 		"facebook_id": facebookID,
@@ -39,7 +63,11 @@ func (c *Client) FacebookLogin(email string, name string, facebookID string) err
 	if err != nil {
 		return err
 	}
+
 	fmt.Println(resp.Status)
+	if resp.StatusCode == 204 {
+		return c.Create(name, "", email, "", facebookID)
+	}
 	fmt.Println(resp.StatusCode)
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	bodyString := string(bodyBytes)
@@ -48,12 +76,13 @@ func (c *Client) FacebookLogin(email string, name string, facebookID string) err
 	return err
 }
 
-func (c *Client) Create(name string, phone string, email string, password string) error {
+func (c *Client) Create(name string, phone string, email string, password string, facebookID string) error {
 	message := map[string]interface{}{
-		"name":     name,
-		"phone":    phone,
-		"email":    email,
-		"password": password,
+		"name":        name,
+		"phone":       phone,
+		"email":       email,
+		"password":    password,
+		"facebook_id": facebookID,
 	}
 
 	bytesRepresentation, err := json.Marshal(message)
