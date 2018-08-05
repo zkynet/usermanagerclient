@@ -22,6 +22,21 @@ func NewClient() *Client {
 	}
 }
 
+func (c *Client) Logout() error {
+
+	url := c.URL + ":" + c.Port + "/logout"
+	err, resp := c.sendRequest(c.Headers, "POST", nil, url)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(resp.StatusCode)
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyString := string(bodyBytes)
+	fmt.Println(bodyString)
+	return err
+}
+
 func (c *Client) Login(email string, password string) error {
 	message := map[string]interface{}{
 		"email":    email,
