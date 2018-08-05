@@ -31,7 +31,8 @@ func (c *Client) Create(name string, phone string, email string, password string
 		log.Fatalln(err)
 	}
 
-	err, resp := sendRequest(c.Headers, "POST", bytesRepresentation, c.URL+c.Port)
+	url := c.URL + ":" + c.Port + "/user"
+	err, resp := sendRequest(c.Headers, "POST", bytesRepresentation, url)
 	if err != nil {
 		return err
 	}
