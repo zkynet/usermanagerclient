@@ -12,6 +12,12 @@ type Client struct {
 	Headers map[string]string
 }
 
+func NewClient() *Client {
+	return &Client{
+		Headers: make(map[string]string),
+	}
+}
+
 func (c *Client) Create(name string, phone string, email string, password string) error {
 	message := map[string]interface{}{
 		"name":     name,
