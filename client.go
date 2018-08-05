@@ -4,18 +4,43 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 )
 
 type Client struct {
 	URL     string
 	Port    string
 	Headers map[string]string
+	Cookies map[string]*http.Cookie
 }
 
 func NewClient() *Client {
 	return &Client{
 		Headers: make(map[string]string),
 	}
+}
+
+func (c *Client) FacebookLogin(email string, name string, facebookID string) error {
+	message := map[string]interface{}{
+		"facebook_id": facebookID,
+		"email":       email,
+		"name":        name,
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	url := c.URL + ":" + c.Port + "/facebookLogin"
+	err, resp := c.sendRequest(c.Headers, "POST", bytesRepresentation, url)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(resp)
+
+	return err
 }
 
 func (c *Client) Create(name string, phone string, email string, password string) error {
@@ -32,7 +57,7 @@ func (c *Client) Create(name string, phone string, email string, password string
 	}
 
 	url := c.URL + ":" + c.Port + "/user"
-	err, resp := sendRequest(c.Headers, "POST", bytesRepresentation, url)
+	err, resp := c.sendRequest(c.Headers, "POST", bytesRepresentation, url)
 	if err != nil {
 		return err
 	}
@@ -40,4 +65,26 @@ func (c *Client) Create(name string, phone string, email string, password string
 	fmt.Println(resp)
 
 	return err
+}
+
+func (c *Client) ValidateRequest(namespace string, token string) error {
+	message := map[string]interface{}{
+		"tag": namespace,
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	url := c.URL + ":" + c.Port + "/user"
+	err, resp := c.sendRequest(c.Headers, "POST", bytesRepresentation, url)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(resp)
+
+	return err
+
 }

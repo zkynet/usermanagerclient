@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func sendRequest(headers map[string]string, method string, payload []byte, domain string) (error, *http.Response) {
+func (c *Client) sendRequest(headers map[string]string, method string, payload []byte, domain string) (error, *http.Response) {
 	client := &http.Client{}
 	req, err := http.NewRequest(method, domain, bytes.NewReader(payload))
 	if err != nil {
@@ -16,9 +16,18 @@ func sendRequest(headers map[string]string, method string, payload []byte, domai
 		req.Header.Add(i, v)
 	}
 
+	for _, v := range c.Cookies {
+		req.AddCookie(v)
+	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return err, nil
 	}
+
+	for _, v := range resp.Cookies() {
+		c.Cookies[v.Name] = v
+	}
+
 	return nil, resp
 }
