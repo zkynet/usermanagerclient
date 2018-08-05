@@ -32,7 +32,7 @@ func (c *Client) FacebookLogin(email string, name string, facebookID string) err
 		log.Fatalln(err)
 	}
 
-	url := c.URL + ":" + c.Port + "/facebookLogin"
+	url := c.URL + ":" + c.Port + "/facebook/login"
 	err, resp := c.sendRequest(c.Headers, "POST", bytesRepresentation, url)
 	if err != nil {
 		return err
