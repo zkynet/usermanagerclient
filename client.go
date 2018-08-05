@@ -2,6 +2,7 @@ package usermanagerclient
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 )
 
@@ -24,5 +25,12 @@ func (c *Client) Create(name string, phone string, email string, password string
 		log.Fatalln(err)
 	}
 
-	sendRequest(c.Headers, "POST", bytesRepresentation, c.URL+c.Port)
+	err, resp := sendRequest(c.Headers, "POST", bytesRepresentation, c.URL+c.Port)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(resp)
+
+	return err
 }
