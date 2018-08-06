@@ -37,7 +37,7 @@ func (c *Client) Logout() error {
 	return err
 }
 
-func (c *Client) Login(email string, password string) error {
+func (c *Client) Login(email string, password string) (error, string, int) {
 	message := map[string]interface{}{
 		"email":    email,
 		"password": password,
@@ -45,20 +45,25 @@ func (c *Client) Login(email string, password string) error {
 
 	bytesRepresentation, err := json.Marshal(message)
 	if err != nil {
-		log.Fatalln(err)
+		return err, "", 0
 	}
 
 	url := c.URL + ":" + c.Port + "/login"
 	err, resp := c.sendRequest(c.Headers, "POST", bytesRepresentation, url)
 	if err != nil {
-		return err
+		return err, "", 0
 	}
 
 	fmt.Println(resp.StatusCode)
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
-	bodyString := string(bodyBytes)
-	fmt.Println(bodyString)
-	return err
+	if resp.StatusCode == 401 {
+
+	}
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err, "", 0
+	}
+
+	return err, string(bodyBytes), resp.StatusCode
 }
 
 func (c *Client) FacebookLogin(email string, name string, facebookID string) error {
