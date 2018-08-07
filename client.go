@@ -11,13 +11,10 @@ type System struct {
 	URL                   string
 	Port                  string
 	Headers               map[string]string
-	Cookies               map[string]*http.Cookie
 	JWT                   string
 	SystemAuthHeaderKey   string
 	SystemAuthHeaderValue string
 	JWTHeaderKey          string
-	SystemCookieName      string
-	UserCookieName        string
 }
 
 type User struct {
@@ -100,13 +97,6 @@ func (c *System) ValidateRequest(namespace string, request *http.Request) (error
 		"tag": namespace,
 	}
 
-	var userCookie *http.Cookie
-	for _, cookie := range request.Cookies() {
-		if cookie.Name == c.UserCookieName {
-			userCookie = cookie
-		}
-	}
-
 	var userJWT string
 	for headerIndex, v := range request.Header {
 		if headerIndex == c.JWTHeaderKey {
@@ -120,7 +110,7 @@ func (c *System) ValidateRequest(namespace string, request *http.Request) (error
 	}
 
 	url := c.URL + ":" + c.Port + "/validateRequest"
-	err, resp := c.requestWithUserCredentials(c.Headers, "POST", bytesRepresentation, url, userCookie, userJWT)
+	err, resp := c.requestWithUserCredentials(c.Headers, "POST", bytesRepresentation, url, userJWT)
 	if err != nil {
 		return err, "", 0
 	}
