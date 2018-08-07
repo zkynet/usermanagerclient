@@ -8,14 +8,16 @@ import (
 )
 
 type System struct {
-	URL              string
-	Port             string
-	Headers          map[string]string
-	Cookies          map[string]*http.Cookie
-	JWT              string
-	JWTHeaderName    string
-	SystemCookieName string
-	UserCookieName   string
+	URL                   string
+	Port                  string
+	Headers               map[string]string
+	Cookies               map[string]*http.Cookie
+	JWT                   string
+	SystemAuthHeaderKey   string
+	SystemAuthHeaderValue string
+	JWTHeaderKey          string
+	SystemCookieName      string
+	UserCookieName        string
 }
 
 type User struct {
@@ -93,9 +95,23 @@ func (c *System) CreateUser(name string, phone string, email string, password st
 	return err, data.ID, resp.StatusCode
 }
 
-func (c *System) ValidateRequest(namespace string) (error, string, int) {
+func (c *System) ValidateRequest(namespace string, request *http.Request) (error, string, int) {
 	message := map[string]interface{}{
 		"tag": namespace,
+	}
+
+	var userCookie *http.Cookie
+	for _, cookie := range request.Cookies() {
+		if cookie.Name == c.UserCookieName {
+			userCookie = cookie
+		}
+	}
+
+	var userJWT string
+	for headerIndex, v := range request.Header {
+		if headerIndex == c.JWTHeaderKey {
+			userJWT = v[0]
+		}
 	}
 
 	bytesRepresentation, err := json.Marshal(message)
@@ -104,7 +120,7 @@ func (c *System) ValidateRequest(namespace string) (error, string, int) {
 	}
 
 	url := c.URL + ":" + c.Port + "/validateRequest"
-	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", bytesRepresentation, url)
+	err, resp := c.requestWithUserCredentials(c.Headers, "POST", bytesRepresentation, url, userCookie, userJWT)
 	if err != nil {
 		return err, "", 0
 	}

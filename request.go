@@ -16,6 +16,8 @@ func (c *System) requestWithSystemCredentials(headers map[string]string, method 
 		req.Header.Add(i, v)
 	}
 
+	req.Header.Add(c.SystemAuthHeaderKey, c.SystemAuthHeaderValue)
+
 	for _, v := range c.Cookies {
 		req.AddCookie(v)
 	}
@@ -30,8 +32,8 @@ func (c *System) requestWithSystemCredentials(headers map[string]string, method 
 	}
 
 	for i, v := range resp.Header {
-		if i == c.JWTHeaderName {
-			c.Headers[c.JWTHeaderName] = v[0]
+		if i == c.JWTHeaderKey {
+			c.Headers[c.JWTHeaderKey] = v[0]
 		}
 	}
 
@@ -45,8 +47,10 @@ func (s *System) requestWithUserCredentials(headers map[string]string, method st
 		return err, nil
 	}
 
+	req.Header.Add(s.SystemAuthHeaderKey, s.SystemAuthHeaderValue)
+
 	if jwt != "" {
-		req.Header.Add(s.JWTHeaderName, jwt)
+		req.Header.Add(s.JWTHeaderKey, jwt)
 	}
 
 	if cookie != nil {
