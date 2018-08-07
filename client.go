@@ -4,39 +4,49 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 
-type Client struct {
-	URL     string
-	Port    string
-	Headers map[string]string
-	Cookies map[string]*http.Cookie
+type System struct {
+	URL              string
+	Port             string
+	Headers          map[string]string
+	Cookies          map[string]*http.Cookie
+	JWT              string
+	JWTHeaderName    string
+	SystemCookieName string
+	UserCookieName   string
 }
 
-func NewClient() *Client {
-	return &Client{
-		Headers: make(map[string]string),
-		Cookies: make(map[string]*http.Cookie),
-	}
+type User struct {
+	System *System
+	JWT    string
+	Cookie *http.Cookie
 }
 
-func (c *Client) Logout() error {
+type Group struct {
+	ID  string `json:"id"`
+	Tag string `json:"tag"`
+}
+
+type UserID struct {
+	ID string `json:"id"`
+}
+
+func (c *System) Logout() error {
 
 	url := c.URL + ":" + c.Port + "/logout"
-	err, resp := c.sendRequest(c.Headers, "POST", nil, url)
+	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", nil, url)
 	if err != nil {
 		return err
 	}
 
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
-	bodyString := string(bodyBytes)
-	fmt.Println(bodyString)
+	fmt.Println(getBodyString(resp.Body))
 	return err
 }
 
-func (c *Client) Login(email string, password string) (error, string, int) {
+func (c *System) Login(email string, password string) (error, string, int) {
+
 	message := map[string]interface{}{
 		"email":    email,
 		"password": password,
@@ -48,50 +58,17 @@ func (c *Client) Login(email string, password string) (error, string, int) {
 	}
 
 	url := c.URL + ":" + c.Port + "/login"
-	err, resp := c.sendRequest(c.Headers, "POST", bytesRepresentation, url)
+	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", bytesRepresentation, url)
 	if err != nil {
 		return err, "", 0
 	}
 
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err, "", 0
-	}
-
-	return err, string(bodyBytes), resp.StatusCode
+	data := &UserID{}
+	json.NewDecoder(resp.Body).Decode(data)
+	return err, data.ID, resp.StatusCode
 }
 
-func (c *Client) FacebookLogin(email string, name string, facebookID string) error {
-	message := map[string]interface{}{
-		"facebook_id": facebookID,
-		"email":       email,
-		"name":        name,
-	}
-
-	bytesRepresentation, err := json.Marshal(message)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	url := c.URL + ":" + c.Port + "/facebook/login"
-	err, resp := c.sendRequest(c.Headers, "POST", bytesRepresentation, url)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(resp.Status)
-	if resp.StatusCode == 204 {
-		return c.Create(name, "", email, "", facebookID)
-	}
-	fmt.Println(resp.StatusCode)
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
-	bodyString := string(bodyBytes)
-	fmt.Println(bodyString)
-
-	return err
-}
-
-func (c *Client) Create(name string, phone string, email string, password string, facebookID string) error {
+func (c *System) CreateUser(name string, phone string, email string, password string, facebookID string, appID string) (error, string, int) {
 	message := map[string]interface{}{
 		"name":        name,
 		"phone":       phone,
@@ -102,21 +79,21 @@ func (c *Client) Create(name string, phone string, email string, password string
 
 	bytesRepresentation, err := json.Marshal(message)
 	if err != nil {
-		log.Fatalln(err)
+		return err, "", 0
 	}
 
-	url := c.URL + ":" + c.Port + "/user"
-	err, resp := c.sendRequest(c.Headers, "POST", bytesRepresentation, url)
+	url := c.URL + ":" + c.Port + "/user/" + appID
+	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", bytesRepresentation, url)
 	if err != nil {
-		return err
+		return err, "", 0
 	}
 
-	fmt.Println(resp)
-
-	return err
+	data := &UserID{}
+	json.NewDecoder(resp.Body).Decode(data)
+	return err, data.ID, resp.StatusCode
 }
 
-func (c *Client) ValidateRequest(namespace string) (error, string, int) {
+func (c *System) ValidateRequest(namespace string) (error, string, int) {
 	message := map[string]interface{}{
 		"tag": namespace,
 	}
@@ -127,11 +104,78 @@ func (c *Client) ValidateRequest(namespace string) (error, string, int) {
 	}
 
 	url := c.URL + ":" + c.Port + "/validateRequest"
-	err, resp := c.sendRequest(c.Headers, "POST", bytesRepresentation, url)
+	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", bytesRepresentation, url)
 	if err != nil {
 		return err, "", 0
 	}
 
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	return err, string(bodyBytes), resp.StatusCode
+}
+
+func (c *System) CreateGroup(tag string, appID string) (error, string, int) {
+
+	message := map[string]interface{}{
+		"tag": tag,
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		return err, "", 0
+	}
+
+	url := c.URL + ":" + c.Port + "/group/" + appID
+	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", bytesRepresentation, url)
+	if err != nil {
+		return err, "", 0
+	}
+
+	data := &Group{}
+	json.NewDecoder(resp.Body).Decode(data)
+
+	return err, data.ID, resp.StatusCode
+}
+func (c *System) AttachNamespaceToGroup(groupID string, namespaceID string) (error, string, int) {
+
+	url := c.URL + ":" + c.Port + "/namespace/" + namespaceID + "/attach/to/group/" + groupID
+	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", nil, url)
+	if err != nil {
+		return err, "", 0
+	}
+
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	return err, string(bodyBytes), resp.StatusCode
+}
+func (c *System) AttachUserToGroup(groupID string, userID string) (error, string, int) {
+
+	url := c.URL + ":" + c.Port + "/user/" + userID + "/attach/to/group/" + groupID
+	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", nil, url)
+	if err != nil {
+		return err, "", 0
+	}
+
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	return err, string(bodyBytes), resp.StatusCode
+}
+func (c *System) CreateNamespace(tag string, appID string) (error, string, int) {
+
+	message := map[string]interface{}{
+		"tag": tag,
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		return err, "", 0
+	}
+
+	url := c.URL + ":" + c.Port + "/namespace/" + appID
+	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", bytesRepresentation, url)
+	if err != nil {
+		return err, "", 0
+	}
+
+	data := &Group{}
+	json.NewDecoder(resp.Body).Decode(data)
+
+	return err, data.ID, resp.StatusCode
 }
