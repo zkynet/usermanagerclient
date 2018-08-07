@@ -44,7 +44,7 @@ func (c *System) Logout() error {
 	return err
 }
 
-func (c *System) Login(email string, password string) (error, string, int) {
+func (c *System) Login(email string, password string, appID string) (error, string, int) {
 
 	message := map[string]interface{}{
 		"email":    email,
@@ -56,7 +56,7 @@ func (c *System) Login(email string, password string) (error, string, int) {
 		return err, "", 0
 	}
 
-	url := c.URL + ":" + c.Port + "/login"
+	url := c.URL + ":" + c.Port + "/login/" + appID
 	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", bytesRepresentation, url)
 	if err != nil {
 		return err, "", 0
