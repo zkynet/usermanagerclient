@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/zkynet/errorwrapper"
 )
 
 type System struct {
@@ -184,4 +186,24 @@ func (c *System) CreateNamespace(tag string, appID string) (error, string, int) 
 	json.NewDecoder(resp.Body).Decode(data)
 
 	return err, data.ID, resp.StatusCode
+}
+
+func (c *System) ParseUserManagerError(err error, body string, code int) error {
+	if code == 200 {
+		return nil
+	}
+
+	if code == 401 {
+		return errorwrapper.Unauthorized(err)
+	}
+
+	if code == 403 {
+		return errorwrapper.UnauthorizedCustomMessage(err, "You do not have the correct authentication headers")
+	}
+
+	newErr := errorwrapper.GenericError(err)
+	newErr.Message = body
+	newErr.OriginalError = err
+	return newErr
+
 }
