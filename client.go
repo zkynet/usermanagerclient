@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zkynet/errorwrapper"
 )
 
@@ -94,7 +95,12 @@ func (c *System) CreateUser(name string, phone string, email string, password st
 	return err, data.ID, resp.StatusCode
 }
 
-func (c *System) ValidateRequest(namespace string, request *http.Request) (error, string, int) {
+func (c *System) ValidateRequest(namespace string, request *http.Request) error {
+	return c.ParseUserManagerError(
+		c.ValidateNamspace(namespace, request))
+}
+
+func (c *System) ValidateNamspace(namespace string, request *http.Request) (error, string, int) {
 	message := map[string]interface{}{
 		"tag": namespace,
 	}
@@ -206,4 +212,16 @@ func (c *System) ParseUserManagerError(err error, body string, code int) error {
 	newErr.OriginalError = err
 	return newErr
 
+}
+
+func (c *System) GINROUTERNamespaceValidation(namespace string) gin.HandlerFunc {
+	return func(g *gin.Context) {
+		authErr := c.ParseUserManagerError(c.ValidateNamspace(namespace, g.Request))
+		if authErr != nil {
+			g.JSON(errorwrapper.GetErrorCode(authErr), errorwrapper.HandleError(authErr))
+			g.Abort()
+			return
+		}
+		g.Next()
+	}
 }
