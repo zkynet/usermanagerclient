@@ -2,11 +2,17 @@ package usermanagerclient
 
 import (
 	"bytes"
+	"crypto/tls"
+	"log"
 	"net/http"
 )
 
 func (c *System) requestWithSystemCredentials(headers map[string]string, method string, payload []byte, domain string) (error, *http.Response) {
-	client := &http.Client{}
+	log.Println("sending to:", domain)
+	transCfg := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+	}
+	client := &http.Client{Transport: transCfg}
 	req, err := http.NewRequest(method, domain, bytes.NewReader(payload))
 	if err != nil {
 		return err, nil
@@ -33,7 +39,10 @@ func (c *System) requestWithSystemCredentials(headers map[string]string, method 
 }
 
 func (s *System) requestWithUserCredentials(headers map[string]string, method string, payload []byte, domain string, jwt string) (error, *http.Response) {
-	client := &http.Client{}
+	transCfg := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+	}
+	client := &http.Client{Transport: transCfg}
 	req, err := http.NewRequest(method, domain, bytes.NewReader(payload))
 	if err != nil {
 		return err, nil

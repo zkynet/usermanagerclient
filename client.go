@@ -35,9 +35,17 @@ type UserID struct {
 	ID string `json:"id"`
 }
 
+func constructDomain(url, port string) string {
+	if port != "" {
+		return url + ":" + port
+	}
+
+	return url
+}
+
 func (c *System) Logout() error {
 
-	url := c.URL + ":" + c.Port + "/logout"
+	url := constructDomain(c.URL, c.Port) + "/logout"
 	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", nil, url)
 	if err != nil {
 		return err
@@ -59,7 +67,7 @@ func (c *System) Login(email string, password string, appID string) (error, stri
 		return err, "", 0
 	}
 
-	url := c.URL + ":" + c.Port + "/login/" + appID
+	url := constructDomain(c.URL, c.Port) + "/login/" + appID
 	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", bytesRepresentation, url)
 	if err != nil {
 		return err, "", 0
@@ -84,7 +92,7 @@ func (c *System) CreateUser(name string, phone string, email string, password st
 		return err, "", 0
 	}
 
-	url := c.URL + ":" + c.Port + "/user/" + appID
+	url := constructDomain(c.URL, c.Port) + "/user/" + appID
 	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", bytesRepresentation, url)
 	if err != nil {
 		return err, "", 0
@@ -117,7 +125,7 @@ func (c *System) ValidateNamspace(namespace string, request *http.Request) (erro
 		return err, "", 0
 	}
 
-	url := c.URL + ":" + c.Port + "/validateRequest"
+	url := constructDomain(c.URL, c.Port) + "/validateRequest"
 	err, resp := c.requestWithUserCredentials(c.Headers, "POST", bytesRepresentation, url, userJWT)
 	if err != nil {
 		return err, "", 0
@@ -138,7 +146,7 @@ func (c *System) CreateGroup(tag string, appID string) (error, string, int) {
 		return err, "", 0
 	}
 
-	url := c.URL + ":" + c.Port + "/group/" + appID
+	url := constructDomain(c.URL, c.Port) + "/group/" + appID
 	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", bytesRepresentation, url)
 	if err != nil {
 		return err, "", 0
@@ -151,7 +159,7 @@ func (c *System) CreateGroup(tag string, appID string) (error, string, int) {
 }
 func (c *System) AttachNamespaceToGroup(groupID string, namespaceID string) (error, string, int) {
 
-	url := c.URL + ":" + c.Port + "/namespace/" + namespaceID + "/attach/to/group/" + groupID
+	url := constructDomain(c.URL, c.Port) + "/namespace/" + namespaceID + "/attach/to/group/" + groupID
 	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", nil, url)
 	if err != nil {
 		return err, "", 0
@@ -162,7 +170,7 @@ func (c *System) AttachNamespaceToGroup(groupID string, namespaceID string) (err
 }
 func (c *System) AttachUserToGroup(groupID string, userID string) (error, string, int) {
 
-	url := c.URL + ":" + c.Port + "/user/" + userID + "/attach/to/group/" + groupID
+	url := constructDomain(c.URL, c.Port) + "/user/" + userID + "/attach/to/group/" + groupID
 	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", nil, url)
 	if err != nil {
 		return err, "", 0
@@ -182,7 +190,7 @@ func (c *System) CreateNamespace(tag string, appID string) (error, string, int) 
 		return err, "", 0
 	}
 
-	url := c.URL + ":" + c.Port + "/namespace/" + appID
+	url := constructDomain(c.URL, c.Port) + "/namespace/" + appID
 	err, resp := c.requestWithSystemCredentials(c.Headers, "POST", bytesRepresentation, url)
 	if err != nil {
 		return err, "", 0
